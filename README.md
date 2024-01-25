@@ -11,3 +11,4 @@
 ## info
 - pylon stands for PYthon-Like Object Notation
 - used in the command line by passing the file name as an interpreter argument
+- to use it from another file, just `from pylon import parsePylon`
