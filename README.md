@@ -1,5 +1,6 @@
 # pylon
  A data storage type based on Python, I guess.
+ Stands for PYthon-Like Object Notation
 
 ## features
 - Support for strings, numbers, booleans, and `None`
