@@ -21,6 +21,13 @@ def interpretData(point):
     if re.match(r"^0b[01_]+$", point.casefold()):
         return int(re.match(r"^0b([01_]+)$", point.casefold()).groups()[0].replace('_', ''), 2)
 
+def intSafe(string):
+    try: return int(string)
+    except ValueError:
+        if re.match(r'"(.*)"', string):
+            return re.match(r'"(.*)"', string).groups()[0]
+        return string
+
 def detectIndent(code):
     for i in code:
         match = re.match(r"^ +|^\t+", i, re.MULTILINE)
@@ -48,17 +55,17 @@ def parsePylon(code):
         else:
             obj = re.match("^"+indent*lineIndent+r"([^#]+?)[ \t]*:[ \t]*([^ \t#][^#]*?)(?:[ \t]*#.*)?$", curr).groups()
             while len(queue) <= lineIndent: queue += [{}]
-            queue[-1][obj[0]] = interpretData(obj[1])
+            queue[-1][intSafe(obj[0])] = interpretData(obj[1])
         if lineIndent == prevLineIndent + 1:
             red = True
             qObj = re.match("^"+indent*prevLineIndent+"(?:"+indent+r")?([^#]+?)[ \t]*:(?:[ \t]*#.*)?$", prev).groups()
-            queue[prevLineIndent][qObj[0]] = queue[-1]
+            queue[prevLineIndent][intSafe(qObj[0])] = queue[-1]
             queue = queue[0:prevLineIndent+1]
         elif lineIndent > prevLineIndent:
             raise IndentationError("Invalid indentation step")
     if re.match(r"^([^#]+?)[ \t]*:[ \t]*([^ \t#][^#]*?)(?:[ \t]*#.*)?$", code[0]):
         fObj = re.match(r"^([^#]+?)[ \t]*:[ \t]*([^ \t#][^#]*?)(?:[ \t]*#.*)?$", code[0]).groups()
-        queue[0][fObj[0]] = interpretData(fObj[1])
+        queue[0][intSafe(fObj[0])] = interpretData(fObj[1])
     if len(queue) != 1: raise SyntaxError("What?")
     return queue[0]
 
