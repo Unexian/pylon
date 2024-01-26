@@ -4,14 +4,22 @@ def interpretData(point):
     if point == "True": return True
     if point == "False": return False
     if point == "None": return None
-    if re.match(r'^"((?:\"|[^"])*)"$', point): return re.match(r'^"((?:\"|[^"])*)"$', point).groups()[0]
-    if re.match(r"^0x[0-9a-f_]+$", point.casefold()): return int(re.match(r"^0x([0-9a-f_]+)$", point.casefold()).groups()[0].replace('_', ''), 16)
-    if re.match(r"^([0-9_]+(?:\.[0-9_]+)?)e([0-9_]+(?:\.[0-9_]+)?)$", point.casefold()):
-        match = re.match(r"^([0-9_]+(?:\.[0-9_]+)?)e([0-9_]+(?:\.[0-9_]+)?)$", point.casefold()).groups()
+    if re.match(r'^"(?:\"|[^"])*"$', point): return re.match(r'^"((?:\"|[^"])*)"$', point).groups()[0]
+    if re.match(r"^0x[\da-f_]+$", point.casefold()):
+        return int(re.match(r"^0x([\da-f_]+)$", point.casefold()).groups()[0].replace('_', ''), 16)
+    if re.match(r"^[\d_]+(?:\.[\d_]+)?e[\d_]+$", point.casefold()):
+        match = re.match(r"^([\d_]+(?:\.[\d_]+)?)e([\d_]+)$", point.casefold()).groups()
         return float(match[0].replace('_', '')) * 10 ** float(match[1].replace('_', ''))
-    if re.match(r"^[0-9_]+(?:\.[0-9_]+)?$", point.casefold()): return float(re.match(r"^[0-9_]+(?:\.[0-9_]+)?$", point.casefold()).group().replace('_', ''))
-    if re.match(r"^0o[0-7_]+$", point.casefold()): return int(re.match(r"^0o([0-7_]+)$", point.casefold()).groups()[0].replace('_', ''), 8)
-    if re.match(r"^0b[01_]+$", point.casefold()): return int(re.match(r"^0b([01_]+)$", point.casefold()).groups()[0].replace('_', ''), 2)
+    if re.match(r"^e*[\d_]+(?:\.[\d_]+)?(e([\d_]+))?$", point.casefold()):
+        match = re.match(r"^(e*)([\d_]+(?:\.[\d_]+)?)(?:e([\d_]+))?$", point.casefold())
+        out = float(match.groups()[1])
+        if match.groups()[2]: out *= 10 ** float(match.groups()[2])
+        for i in range(len(match.groups()[0])): out = 10 ** out
+        return out
+    if re.match(r"^0o[0-7_]+$", point.casefold()):
+        return int(re.match(r"^0o([0-7_]+)$", point.casefold()).groups()[0].replace('_', ''), 8)
+    if re.match(r"^0b[01_]+$", point.casefold()):
+        return int(re.match(r"^0b([01_]+)$", point.casefold()).groups()[0].replace('_', ''), 2)
 
 def detectIndent(code):
     for i in code:
@@ -28,9 +36,11 @@ def parsePylon(code):
     for i in range(len(code)-1, 0, -1):
         curr = code[i]
         prev = code[i-1]
-        if re.match("^" + indent + "*", curr): lineIndent = int(len(re.match("^" + indent + "*", curr).group())/len(indent))
+        if re.match("^" + indent + "*", curr):
+            lineIndent = int(len(re.match("^" + indent + "*", curr).group())/len(indent))
         else: lineIndent = 0
-        if re.match("^" + indent + "*", prev): prevLineIndent = int(len(re.match("^" + indent + "*", prev).group())/len(indent))
+        if re.match("^" + indent + "*", prev):
+            prevLineIndent = int(len(re.match("^" + indent + "*", prev).group())/len(indent))
         else: prevLineIndent = 0
         if red:
             obj = re.match("^"+indent*lineIndent+r"([^#]+?)[ \t]*:(?:[ \t]*#.*)?$", curr).groups()
