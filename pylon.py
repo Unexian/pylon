@@ -1,10 +1,11 @@
-import sys, re
+import sys, re, ast
 
 def interpretData(point):
     if point == "True": return True
     if point == "False": return False
     if point == "None": return None
-    if re.match(r'^"(?:\"|[^"])*"$', point): return re.match(r'^"((?:\"|[^"])*)"$', point).groups()[0]
+    if re.match(r'^"(?:\"|[^"])*"$', point): return point[1:-1]
+    if re.match(r"^'(?:\'|[^'])*'$", point): return point[1:-1]
     if re.match(r"^0x[\da-f_]+$", point.casefold()):
         return int(re.match(r"^0x([\da-f_]+)$", point.casefold()).groups()[0].replace('_', ''), 16)
     if re.match(r"^[\d_]+(?:\.[\d_]+)?e[\d_]+$", point.casefold()):
@@ -20,12 +21,15 @@ def interpretData(point):
         return int(re.match(r"^0o([0-7_]+)$", point.casefold()).groups()[0].replace('_', ''), 8)
     if re.match(r"^0b[01_]+$", point.casefold()):
         return int(re.match(r"^0b([01_]+)$", point.casefold()).groups()[0].replace('_', ''), 2)
+    raise ValueError("Invalid data point")
 
 def intSafe(string):
     try: return int(string)
     except ValueError:
-        if re.match(r'"(.*)"', string):
-            return re.match(r'"(.*)"', string).groups()[0]
+        if re.match(r'^"(?:\"|[^"])*"$', string):
+            return string[1:-1]
+        if re.match(r"^'(?:\'|[^'])*'$", string):
+            return string[1:-1]
         return string
 
 def detectIndent(code):
@@ -69,6 +73,15 @@ def parsePylon(code):
     if len(queue) != 1: raise SyntaxError("What?")
     return queue[0]
 
+def buildpylon(obj, *, ind="\t"):
+    return obj
+
 if __name__ == '__main__':
-    with open(sys.argv[1], 'r') as file: code = file.read()
-    print(parsePylon(code))
+    if sys.argv[1] == '-i':
+        with open(sys.argv[2]) as file:
+            print(parsePylon(file.read()))
+    elif sys.argv[1] == '-c':
+        built = buildpylon(ast.literal_eval(sys.argv[3]))
+        # with open(sys.argv[2], 'w') as file:
+            # file.write(built)
+        print(built)
