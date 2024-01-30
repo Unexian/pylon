@@ -1,5 +1,7 @@
 import sys, re, ast
 
+# Interpret a string as a data point
+
 def interpretData(point):
     if point == "True": return True
     if point == "False": return False
@@ -23,6 +25,9 @@ def interpretData(point):
         return int(re.match(r"^0b([01_]+)$", point.casefold()).groups()[0].replace('_', ''), 2)
     raise ValueError("Invalid data point")
 
+# Try to convert a string to an int.
+# If that fails, return the input instead of erroring.
+
 def intSafe(string):
     try: return int(string)
     except ValueError:
@@ -32,17 +37,21 @@ def intSafe(string):
             return string[1:-1]
         return string
 
+# Detect the indentation length of the string
+
 def detectIndent(code):
     for i in code:
         match = re.match(r"^ +|^\t+", i, re.MULTILINE)
         if match: return match.group()
     return None
 
+# Actually parse the string
+
 def parsePylon(code):
     code = [ln for ln in code.split('\n') if re.match("^[ \t]*(#|$)", ln) is None]
     if code == []: return {}
     indent = detectIndent(code)
-    queue = [{}]
+    stack = [{}]
     red = False
     for i in range(len(code)-1, 0, -1):
         curr = code[i]
@@ -58,23 +67,24 @@ def parsePylon(code):
             red = False
         else:
             obj = re.match("^"+indent*lineIndent+r"([^#]+?)[ \t]*:[ \t]*([^ \t#][^#]*?)(?:[ \t]*#.*)?$", curr).groups()
-            while len(queue) <= lineIndent: queue += [{}]
-            queue[-1][intSafe(obj[0])] = interpretData(obj[1])
+            while len(stack) <= lineIndent: stack += [{}]
+            stack[-1][intSafe(obj[0])] = interpretData(obj[1])
         if lineIndent == prevLineIndent + 1:
             red = True
             qObj = re.match("^"+indent*prevLineIndent+"(?:"+indent+r")?([^#]+?)[ \t]*:(?:[ \t]*#.*)?$", prev).groups()
-            queue[prevLineIndent][intSafe(qObj[0])] = queue[-1]
-            queue = queue[0:prevLineIndent+1]
+            stack[prevLineIndent][intSafe(qObj[0])] = stack[-1]
+            stack = stack[0:prevLineIndent+1]
         elif lineIndent > prevLineIndent:
             raise IndentationError("Invalid indentation step")
     if re.match(r"^([^#]+?)[ \t]*:[ \t]*([^ \t#][^#]*?)(?:[ \t]*#.*)?$", code[0]):
         fObj = re.match(r"^([^#]+?)[ \t]*:[ \t]*([^ \t#][^#]*?)(?:[ \t]*#.*)?$", code[0]).groups()
-        queue[0][intSafe(fObj[0])] = interpretData(fObj[1])
-    if len(queue) != 1: raise SyntaxError("What?")
-    return queue[0]
+        stack[0][intSafe(fObj[0])] = interpretData(fObj[1])
+    if len(stack) != 1: raise SyntaxError("What?")
+    return stack[0]
 
 def buildpylon(obj, *, ind="\t"):
-    return obj
+    # Not implemented
+    return "!!"
 
 if __name__ == '__main__':
     if sys.argv[1] == '-i':
